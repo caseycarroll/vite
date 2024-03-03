@@ -16,6 +16,7 @@ import colors from 'picocolors'
 import debug from 'debug'
 import type { Alias, AliasOptions } from 'dep-types/alias'
 import type MagicString from 'magic-string'
+import { parseSrcset } from 'srcset'
 
 import type { TransformResult } from 'rollup'
 import { createFilter as _createFilter } from '@rollup/pluginutils'
@@ -723,8 +724,7 @@ interface ImageCandidate {
   url: string
   descriptor: string
 }
-const escapedSpaceCharacters = /( |\\t|\\n|\\f|\\r)+/g
-const imageSetUrlRE = /^(?:[\w\-]+\(.*?\)|'.*?'|".*?"|\S*)/
+
 function joinSrcset(ret: ImageCandidate[]) {
   return ret
     .map(({ url, descriptor }) => url + (descriptor ? ` ${descriptor}` : ''))
@@ -732,14 +732,11 @@ function joinSrcset(ret: ImageCandidate[]) {
 }
 
 function splitSrcSetDescriptor(srcs: string): ImageCandidate[] {
-  return splitSrcSet(srcs)
+  return parseSrcset(srcs)
     .map((s) => {
-      const src = s.replace(escapedSpaceCharacters, ' ').trim()
-      const url = imageSetUrlRE.exec(src)?.[0] ?? ''
-
       return {
-        url,
-        descriptor: src.slice(url.length).trim(),
+        url: s.url,
+        descriptor: s.width ? `${s.width}w` : s.density ? `${s.density}x` : '',
       }
     })
     .filter(({ url }) => !!url)
@@ -767,24 +764,6 @@ export function processSrcSetSync(
       descriptor,
     })),
   )
-}
-
-const cleanSrcSetRE =
-  /(?:url|image|gradient|cross-fade)\([^)]*\)|"([^"]|(?<=\\)")*"|'([^']|(?<=\\)')*'|data:\w+\/[\w.+\-]+;base64,[\w+/=]+/g
-function splitSrcSet(srcs: string) {
-  const parts: string[] = []
-  // There could be a ',' inside of url(data:...), linear-gradient(...), "data:..." or data:...
-  const cleanedSrcs = srcs.replace(cleanSrcSetRE, blankReplacer)
-  let startIndex = 0
-  let splitIndex: number
-  do {
-    splitIndex = cleanedSrcs.indexOf(',', startIndex)
-    parts.push(
-      srcs.slice(startIndex, splitIndex !== -1 ? splitIndex : undefined),
-    )
-    startIndex = splitIndex + 1
-  } while (splitIndex !== -1)
-  return parts
 }
 
 const windowsDriveRE = /^[A-Z]:/

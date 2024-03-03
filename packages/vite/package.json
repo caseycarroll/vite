@@ -145,6 +145,7 @@
     "rollup-plugin-license": "^3.2.0",
     "sirv": "^2.0.4",
     "source-map-support": "^0.5.21",
+    "srcset": "^5.0.1",
     "strip-ansi": "^7.1.0",
     "strip-literal": "^2.0.0",
     "tsconfck": "^3.0.2",
